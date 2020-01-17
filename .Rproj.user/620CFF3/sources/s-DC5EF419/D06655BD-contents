@@ -1,0 +1,380 @@
+---
+title: "FDA_help"
+author: "Dr. Robert Buscalgia"
+date: "10/27/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(fda.usc)
+library(fda)
+```
+
+A random variable $X$ is considered a functional variable if it takes on values in a complete-normed or semi-normed space (functional space).
+
+A functional data set ${X_1, X_2, ..., X_n}$ is a set of $n$ functional variables.
+
+```{r}
+
+x<-seq(0, 2, length.out=1000)
+f <- function(x,q) (1-exp(q*x))/(exp(q*x))
+plot(x,f(x,2))
+
+q.grid <- seq(0, 3, length.out=20)
+q.grid<-exp(q.grid)
+
+y <- matrix(ncol=length(q.grid), nrow=1000)
+for(k in 1:length(q.grid))
+{
+  y[,k] <- f(x,q.grid[k])
+}
+
+curve.fig.df <- data.frame(x=x, y=y)
+curve.fig.df.long <- curve.fig.df %>% gather(key = 'Curve', value='Observed', 2:ncol(curve.fig.df))
+
+# 
+# g1 <- ggplot(curve.fig.df.long, aes(x=x)) + geom_line(aes(y=Observed, color=Curve), lwd=1.25) + theme_void() + theme(legend.position = "none", axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) 
+# png(file="g1.png", width=500, height=500)
+# g1
+# dev.off()
+```
+
+```{r}
+tecator<-read.table("tecator.txt")
+argvals.wave=seq(850, 1048, 2)
+
+
+tecator.raw<-as.matrix(tecator[,1:100])
+tecator.classes<-factor(tecator[,101])
+
+rm(tecator)
+
+tec.fdata<-fdata(tecator.raw, argvals=argvals.wave)
+plot(tec.fdata, xlab='Wavelength', ylab='Absorbance', main='Tecator Fat Content Analysis')
+
+
+lupus<-read.table('lupustherm.txt')
+argvals.temp<-seq(45,90,0.1)
+
+
+lupus.raw<-as.matrix(lupus[,1:451])
+lupus.classes<-factor(lupus[,452])
+
+rm(lupus)
+
+lupus.fdata<-fdata(lupus.raw, argvals=argvals.temp)
+plot(lupus.fdata, xlab='Temperature', ylab='Excess Heat Capacity', main='Lupus Diagnostic Assay')
+abline(h=0)
+```
+
+
+```{r}
+
+data("tecator")
+plot(tecator$absorp.fdata)
+tecator$y
+
+```
+
+
+```{r}
+# data(MCO)
+# grupo<-MCO$classintact
+# datos<-MCO$intact
+# res=anova.onefactor(datos,grupo,nboot=50,plot=TRUE)
+# 
+# 
+# plot(fdata(datos$data))
+
+```
+
+
+\newpage
+
+### B Splines and Smoothing
+
+```{r}
+data(tecator)
+tecator.raw<-tecator$absorp.fdata$data
+argvals.wave=seq(850, 1048, 2)
+
+tec.fdata<-fdata(tecator.raw, argvals=argvals.wave)
+plot(tec.fdata, xlab='Wavelength', ylab='Absorbance',
+     main='Tecator Fat Content Analysis')
+```
+
+
+```{r}
+
+
+
+
+bsp5.1<-create.bspline.basis(range(argvals.wave),
+                            nbasis=5,norder=1)
+
+
+
+
+plot(bsp5.1, lwd=2)
+
+
+
+
+```
+
+
+
+\newpage
+
+```{r}
+
+
+
+
+bsp5.2<-create.bspline.basis(range(argvals.wave),
+                            nbasis=5,norder=2)
+
+
+
+
+plot(bsp5.2, lwd=2)
+
+
+
+
+```
+
+\newpage
+
+```{r}
+
+
+
+
+bsp5.4<-create.bspline.basis(range(argvals.wave),
+                            nbasis=5,norder=4)
+
+
+
+
+plot(bsp5.4, lwd=2)
+```
+
+\newpage
+
+```{r}
+S.5.1 <- S.basis(argvals.wave, basis=bsp5.1)
+S.5.2 <- S.basis(argvals.wave, basis=bsp5.2)
+S.5.4 <- S.basis(argvals.wave, basis=bsp5.4)
+```
+
+```{r}
+tec.fdata.smooth <- tec.fdata
+tec.fdata.smooth$data <- tec.fdata$data%*%S.5.1
+plot(tec.fdata.smooth, xlab='Wavelength', ylab='Absorbance',
+     main='Smoothed nbasis=5, norder=1')
+```
+
+
+```{r}
+plot(argvals.wave, tec.fdata.smooth$data[1,], type='l', lwd=2,
+     ylim=c(2.5, 3.5), xlab='Wavelength', ylab='Absorbance')
+points(argvals.wave, tec.fdata$data[1,])
+```
+
+
+
+```{r}
+tec.fdata.smooth <- tec.fdata
+tec.fdata.smooth$data <- tec.fdata$data%*%S.5.2
+plot(tec.fdata.smooth, xlab='Wavelength', ylab='Absorbance',
+     main='Smoothed nbasis=5, norder=2')
+```
+
+
+
+
+```{r}
+plot(argvals.wave, tec.fdata.smooth$data[1,], type='l', lwd=2,
+     ylim=c(2.5, 3.5), xlab='Wavelength', ylab='Absorbance')
+points(argvals.wave, tec.fdata$data[1,])
+```
+
+```{r}
+tec.fdata.smooth <- tec.fdata
+tec.fdata.smooth$data <- tec.fdata$data%*%S.5.4
+plot(tec.fdata.smooth, xlab='Wavelength', ylab='Absorbance',
+     main='Smoothed nbasis=5, norder=4')
+```
+
+
+
+
+```{r}
+plot(argvals.wave, tec.fdata.smooth$data[1,], type='l', lwd=2,
+     ylim=c(2.5, 3.5), xlab='Wavelength', ylab='Absorbance')
+points(argvals.wave, tec.fdata$data[1,])
+```
+
+```{r}
+
+basis.cv <- min.basis(tec.fdata,type.CV=CV.S)
+basis.cv$numbasis.opt
+
+
+
+plot(basis.cv$fdata.est, xlab='Wavelength', ylab='Absorbance',
+     main='Cross-Validation Basis of Tecator')
+
+```
+
+
+
+```{r}
+plot(argvals.wave, basis.cv$fdata.est$data[1,], type='l', lwd=2,
+     ylim=c(2.5, 3.5), xlab='Wavelength', ylab='Absorbance')
+points(argvals.wave, tec.fdata$data[1,])
+```
+
+```{r}
+optimal.tecator <- basis.cv$fdata.est
+tecator.d1<-fdata.deriv(optimal.tecator, nderiv=1)
+plot(tecator.d1, xlab='Wavelength', ylab='d(Absorbance,1)',
+     main='First Derivative of Tecator')
+```
+
+```{r}
+optimal.tecator <- basis.cv$fdata.est
+tecator.d2<-fdata.deriv(optimal.tecator, nderiv=2)
+plot(tecator.d2, xlab='Wavelength', ylab='d(Absorbance,2)',
+     main='Second Derivative of Tecator')
+```
+
+
+```{r}
+
+mean.tecator<-mean.fd(fdata2fd(optimal.tecator, nbasis=20))
+sd.tecator<-sd.fd(fdata2fd(optimal.tecator, nbasis=20))
+
+
+plot(optimal.tecator, xlab='Wavelength', ylab='Absorbance',
+     main='Tecator Mean and SD Functions', ylim=c(1.8, 5.5))
+lines(mean.fd(fdata2fd(optimal.tecator, nbasis=20)), lwd=8, col='black')
+lines(mean.fd(fdata2fd(optimal.tecator, nbasis=20))+2*sd.fd(fdata2fd(optimal.tecator, nbasis=20)), lwd=8, lty=2, col='black')
+lines(mean.fd(fdata2fd(optimal.tecator, nbasis=20))-2*sd.fd(fdata2fd(optimal.tecator, nbasis=20)), lwd=8, lty=2, col='black')
+
+```
+
+```{r}
+
+Median.Fat <- ifelse(tecator$y$Fat > median(tecator$y$Fat), 1, 0)
+
+High.Fat <- fdata(tecator.d1$data[Median.Fat=='1',], argvals=argvals.wave)
+plot(High.Fat, col='grey50', xlab='Wavelength', ylab='d(Absorbance,1)',
+     main='High Fat Tecator Scans and Mean Function')
+lines(mean.fd(fdata2fd(High.Fat, nbasis=20)), lwd=4, col='red')
+lines(mean.fd(fdata2fd(High.Fat, nbasis=20))+2*sd.fd(fdata2fd(High.Fat, nbasis=20)), lwd=3, lty=2, col='black')
+lines(mean.fd(fdata2fd(High.Fat, nbasis=20))-2*sd.fd(fdata2fd(High.Fat, nbasis=20)), lwd=3, lty=2, col='black')
+
+Low.Fat <- fdata(tecator.d1$data[Median.Fat=='0',], argvals=argvals.wave)
+plot(Low.Fat, col='grey50', xlab='Wavelength', ylab='d(Absorbance,1)',
+     main='Low Fat Tecator Scans and Mean Function')
+lines(mean.fd(fdata2fd(Low.Fat, nbasis=20)), lwd=4, col='red')
+lines(mean.fd(fdata2fd(Low.Fat, nbasis=20))+2*sd.fd(fdata2fd(Low.Fat, nbasis=20)), lwd=3, lty=2, col='black')
+lines(mean.fd(fdata2fd(Low.Fat, nbasis=20))-2*sd.fd(fdata2fd(Low.Fat, nbasis=20)), lwd=3, lty=2, col='black')
+
+
+plot(argvals.wave, colMeans(Low.Fat$data), col='black', type='l', lwd=5)
+lines(argvals.wave, colMeans(High.Fat$data), col='black', lty=2, lwd=5)
+
+plot(mean.fd(fdata2fd(High.Fat, nbasis=20)), lwd=5, col='red', ylim=c(-0.015, 0.032), xlab='Wavelength', ylab='d(Absorbance,1)',
+     main='Low Fat Tecator Scans and Mean Function')
+lines(mean.fd(fdata2fd(Low.Fat, nbasis=20)), lwd=5, col='blue')
+
+lines(mean.fd(fdata2fd(High.Fat, nbasis=20))+2*sd.fd(fdata2fd(High.Fat, nbasis=20)), lwd=2, lty=2, col='red')
+lines(mean.fd(fdata2fd(High.Fat, nbasis=20))-2*sd.fd(fdata2fd(High.Fat, nbasis=20)), lwd=2, lty=2, col='red')
+
+lines(mean.fd(fdata2fd(Low.Fat, nbasis=20))+2*sd.fd(fdata2fd(Low.Fat, nbasis=20)), lwd=2, lty=2, col='blue')
+lines(mean.fd(fdata2fd(Low.Fat, nbasis=20))-2*sd.fd(fdata2fd(Low.Fat, nbasis=20)), lwd=2, lty=2, col='blue')
+
+# dcor.xy(optimal.tecator, tecator.d1)
+# dcor.xy(tecator.d1, tecator.d2)
+# dcor.xy(optimal.tecator, tecator.d2)
+# 
+# dcor.xy(High.Fat, Low.Fat)
+# 
+# Fat.ANOVA <- anova.onefactor(tecator.d1, Median.Fat)
+# Fat.ANOVA$pvalue
+```
+
+
+```{r, cache=TRUE}
+library(fdANOVA)
+
+Fat.ANOVA <- fanova.tests(t(optimal.tecator$data), Median.Fat)
+Fat.ANOVA
+```
+
+```{r}
+# daybasis3 <- create.fourier.basis(c(0, 365))
+# daybasis5 <- create.fourier.basis(c(0, 365), 5)
+# tempfd3 <- with(CanadianWeather, smooth.basis(
+#        day.5, dailyAv[,,"Temperature.C"], 
+#        daybasis3, fdnames=list("Day", "Station", "Deg C"))$fd )
+# precfd5 <- with(CanadianWeather, smooth.basis(
+#        day.5, dailyAv[,,"log10precip"], 
+#        daybasis5, fdnames=list("Day", "Station", "Deg C"))$fd )
+# 
+# # Correlation matrix for a single functional data object
+# (tempCor3 <- cor.fd(seq(0, 356, length=4), tempfd3))
+# 
+# # Cross correlation matrix between two functional data objects 
+# # Compare with structure described above under 'value':
+# (tempPrecCor3.5 <- cor.fd(seq(0, 365, length=4), tempfd3,
+#                           seq(0, 356, length=6), precfd5))
+# 
+# 
+# 
+# cor.temp<-cor.fd(argvals.wave, fdata2fd(High.Fat[1:50,]), argvals.wave, fdata2fd(Low.Fat[1:50,]))
+```
+
+```{r}
+
+absorbance.basis <- create.bspline.basis(range(argvals.wave), nbasis=20)
+coefficient.basis <- create.bspline.basis(range(argvals.wave), nbasis=5)
+
+tecator.d0.reg <- 
+  fregre.basis(optimal.tecator, tecator$y$Fat, absorbance.basis, coefficient.basis)
+
+summary(tecator.d0.reg)
+
+```
+
+
+```{r}
+
+functional.data <- optimal.tecator$data[1,]
+functional.coef <- eval.fd(argvals.wave, tecator.d0.reg$beta.est)
+functional.product <-  functional.data*functional.coef
+
+plot(argvals.wave, functional.data, type='l', lwd=2, xlab='Wavelength', ylab='Absorbance',
+     main='An Observed Absorbance Curve')
+plot(argvals.wave, functional.coef, type='l', lwd=2, xlab='Wavelength', ylab='Magnitude',
+     main='Resulting Coefficient Function')
+abline(h=0, lty=2)
+plot(argvals.wave, functional.product, type='l', lwd=2, xlab='Wavelength', ylab='Magnitude',
+     main='Product of Observed Curve and Coefficient Function')
+abline(h=0, lty=2)
+# 
+# # c(argvals.wave[functional.product>0], functional.product[functional.product>0])
+# 
+# polygon(c(argvals.wave[functional.product>0], functional.product[functional.product>0]), col='red')
+
+plot(predict(tecator.d0.reg), tecator$y$Fat, xlab='Predicted', ylab='Observed')
+abline(a=1,b=1)
+```
+

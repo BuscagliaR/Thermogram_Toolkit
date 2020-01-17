@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1579215783104.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "D06655BD",
+    "lastKnownWriteTime" : 1572323884,
+    "last_content_update" : 1572323884,
+    "path" : "C:/Users/Robert/Dropbox/Northern Arizona University/Seminars and Presentations/Math and Stats Colooquium Fall 2019/FDA_help.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "169,0",
+        "scrollLine" : "146"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
