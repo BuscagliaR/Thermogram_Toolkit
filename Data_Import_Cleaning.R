@@ -83,31 +83,31 @@ penlda.cv.out$bestlambda
 
 ### The start of a function
 
-set.seed(10)
-
-folds.all <- caret::createFolds(class.raw$SLE)
-lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
-
-
-
-fold.id <- 1
-
-folds.all[[fold.id]]
-
-x.test <- x[folds.all[[fold.id]],]
-y.test <- y[folds.all[[fold.id]]]
-
-x.train <- x[-folds.all[[fold.id]],]
-y.train <- y[-folds.all[[fold.id]]]
-
-penlda.cv.out <- PenalizedLDA.cv(x=x.train, y=y.train, lambdas=lambda.seq, nfold = 10)
-
-lambda.set <- penlda.cv.out$bestlambda
-
-penlda.out <- PenalizedLDA(x=x.train, y=y.train, lambda=lambda.set, K=1)
-
-penlda.preds <- predict(penlda.out, x.test)
-acc <- mean(penlda.preds$ypred==y.test)  ### There does not seem to be a way to get posterior probabilities, so we may not include this
+# set.seed(10)
+# 
+# folds.all <- caret::createFolds(class.raw$SLE)
+# lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
+# 
+# 
+# 
+# fold.id <- 1
+# 
+# folds.all[[fold.id]]
+# 
+# x.test <- x[folds.all[[fold.id]],]
+# y.test <- y[folds.all[[fold.id]]]
+# 
+# x.train <- x[-folds.all[[fold.id]],]
+# y.train <- y[-folds.all[[fold.id]]]
+# 
+# penlda.cv.out <- PenalizedLDA.cv(x=x.train, y=y.train, lambdas=lambda.seq, nfold = 10)
+# 
+# lambda.set <- penlda.cv.out$bestlambda
+# 
+# penlda.out <- PenalizedLDA(x=x.train, y=y.train, lambda=lambda.set, K=1)
+# 
+# penlda.preds <- predict(penlda.out, x.test)
+# acc <- mean(penlda.preds$ypred==y.test)  ### There does not seem to be a way to get posterior probabilities, so we may not include this
 
 ### A loop
 
@@ -136,7 +136,8 @@ for(fold.id in 1:folds.n)
   acc[fold.id] <- mean(penlda.preds$ypred==y.test)  ### There does not seem to be a way to get posterior probabilities, so we may not include this
 }
 
-boxplot(acc)  ### Got about 72% mean test set accuracy in first run
+boxplot(acc)  ### Got about 72% mean test set accuracy in first run, on a smoothed set
+## Second run was on original data, seemed different, tuning should be interesting.
 
 ### Enforcing a fused penalty
 ### This is something of interest but takes double the tuning (so probably quadruple the effort)

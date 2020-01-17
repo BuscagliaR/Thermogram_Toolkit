@@ -136,7 +136,8 @@ for(fold.id in 1:folds.n)
   acc[fold.id] <- mean(penlda.preds$ypred==y.test)  ### There does not seem to be a way to get posterior probabilities, so we may not include this
 }
 
-boxplot(acc)  ### Got about 72% mean test set accuracy in first run
+boxplot(acc)  ### Got about 72% mean test set accuracy in first run, on a smoothed set
+## Second run was on original data, seemed different, tuning should be interesting.
 
 ### Enforcing a fused penalty
 ### This is something of interest but takes double the tuning (so probably quadruple the effort)
