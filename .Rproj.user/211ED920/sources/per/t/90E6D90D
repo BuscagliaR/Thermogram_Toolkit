@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "1081708098",
+    "hash" : "1758922664",
     "id" : "90E6D90D",
-    "lastKnownWriteTime" : 1580159417,
-    "last_content_update" : 1580159417454,
+    "lastKnownWriteTime" : 1580160195,
+    "last_content_update" : 1580160195241,
     "path" : "C:/Users/Robert/Dropbox/Northern Arizona University/Github_Repos/Thermogram_Toolkit/Data_Import_Cleaning.R",
     "project_path" : "Data_Import_Cleaning.R",
     "properties" : {
-        "cursorPosition" : "99,23",
-        "scrollLine" : "91"
+        "cursorPosition" : "90,94",
+        "scrollLine" : "84"
     },
     "read_only" : false,
     "read_only_alternatives" : [

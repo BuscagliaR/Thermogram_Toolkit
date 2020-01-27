@@ -83,42 +83,51 @@ penlda.cv.out$bestlambda
 
 ### The start of a function
 
-# set.seed(10)
-# 
-# folds.all <- caret::createFolds(class.raw$SLE)
-# lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
-# 
-# 
-# 
-# fold.id <- 2
-# 
-# folds.all[[fold.id]]
-# 
-# x.test <- x[folds.all[[fold.id]],]
-# y.test <- y[folds.all[[fold.id]]]
-# 
-# x.train <- x[-folds.all[[fold.id]],]
-# y.train <- y[-folds.all[[fold.id]]]
-# 
-# penlda.cv.out <- PenalizedLDA.cv(x=x.train, y=y.train, lambdas=lambda.seq, nfold = 10)
-# 
-# lambda.set <- penlda.cv.out$bestlambda
-# 
-# penlda.out <- PenalizedLDA(x=x.train, y=y.train, lambda=lambda.set, K=1)
-# 
-# plot(penlda.out$discrim)
-# probs <- 1/(1+exp(-x.test%*%penlda.out$discrim))/()
-# predict.test <- probs>0.5
-# factor(predict.test, c(TRUE, FALSE), c(0,1))
-# y.test-1
-# 
-# table(y.test-1, predict.test)
-# mean(y.test-1==predict.test)
-# 
-# cbind(probs, penlda.preds$ypred)
-# 
-# penlda.preds <- predict(penlda.out, x.test)
-# acc <- mean(penlda.preds$ypred==y.test)  ### There does not seem to be a way to get posterior probabilities, so we may not include this
+set.seed(10)
+
+folds.all <- caret::createFolds(class.raw$SLE)
+lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
+
+### I have figured out how to get posterior estimates of the probability for the binary cases.
+
+fold.id <- 2
+
+folds.all[[fold.id]]
+
+x.test <- x[folds.all[[fold.id]],]
+y.test <- y[folds.all[[fold.id]]]
+
+x.train <- x[-folds.all[[fold.id]],]
+y.train <- y[-folds.all[[fold.id]]]
+
+penlda.cv.out <- PenalizedLDA.cv(x=x.train, y=y.train, lambdas=lambda.seq, nfold = 10)
+
+lambda.set <- penlda.cv.out$bestlambda
+
+penlda.out <- PenalizedLDA(x=x.train, y=y.train, lambda=lambda.set, K=1)
+
+plot(penlda.out$discrim)
+
+penlda.out$wcsd.x
+
+xte <- scale(x.test, center = apply(x.train, 2, mean), scale = penlda.out$wcsd.x)
+probs <- xte%*%penlda.out$discrim
+probs
+predict.test <- probs>0
+factor(predict.test, c(TRUE, FALSE), c(0,1))
+y.test-1
+
+table(y.test-1, predict.test)
+mean(y.test-1==predict.test)
+
+cbind(probs, penlda.preds$ypred)
+
+penlda.preds <- predict(penlda.out, x.test)
+acc <- mean(penlda.preds$ypred==y.test)  ### There does not seem to be a way to get posterior probabilities, so we may not include this
+
+predict.penlda
+
+scale(x.test, mean(x.train), sd(x.train))
 
 ### A loop
 
