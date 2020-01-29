@@ -3,15 +3,151 @@
 ## Classification using penalized LDA
 
 library('penalizedLDA')
+library("pROC")
 
-fdata.working <- fdata.raw ### Working functional data set
+
+##### Data Import #####
+
+### This data is created using Data_Import_Cleaning where we can choose smoothing and derivatives.
+plot(fdata.working) ### Working functional data set
+
+
+##### Setup #####
 
 x <- fdata.working$data
-dim(x)
 y <- as.numeric(class.raw$SLE)
+set.seed(10)
+folds.k <- 10
+folds.all <- caret::createFolds(class.raw$SLE, folds.k)  ### prefer as input or we randomly generate the folds
+lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
+
+##### Training #####
+
+fold.id <- 2
+
+folds.all[[fold.id]]
+
+x.test <- x[folds.all[[fold.id]],]
+y.test <- y[folds.all[[fold.id]]]
+
+x.train <- x[-folds.all[[fold.id]],]
+y.train <- y[-folds.all[[fold.id]]]
+
+penlda.cv.out <- PenalizedLDA.cv(x=x.train, y=y.train, lambdas=lambda.seq, nfold = 10)
+### plot(penlda.cv.out)
+
+lambda.set <- penlda.cv.out$bestlambda ### Record the lambda used
+penlda.out <- PenalizedLDA(x=x.train, y=y.train, lambda=lambda.set, K=1)
+
+discrim.temp <- penlda.out$discrim
+### plot(seq(45, 90, 0.1), penlda.out$discrim)  ### Want to save this vector
+
+##### Test Set #####
+
+xte <- scale(x.test, center = apply(x.train, 2, mean), scale = penlda.out$wcsd.x) #normalize test data
+probs.log.temp <- xte%*%penlda.out$discrim #calculte posterior log-odds
+probs.temp <- 1/(1+exp(-probs.log.temp))
+
+
+
+roc.temp <- pROC::roc(y.test, as.vector(probs.temp))
+# plot(my.roc)
+auc.temp <- as.numeric(my.roc$auc)
+
+##### END #####
+
+
+############ HERE IS THE FUNCTION INTERNALS ###################
+
+##### Data Import #####
+
+### This data is created using Data_Import_Cleaning where we can choose smoothing and derivatives.
+plot(fdata.working) ### Working functional data set
+
+### Inputs
+set.seed(10)
+folds.k <- 10
+folds.all <- caret::createFolds(class.raw$SLE, folds.k)  ### prefer as input or we randomly generate the folds
+lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
+
+##### Setup #####
+
+x <- fdata.working$data
+y <- as.numeric(class.raw$SLE)
+
+##### Training #####
+
+for(k in 1:folds.k) ### need to parallelize
+{
+  fold.id <- k
+  x.test <- x[folds.all[[fold.id]],]
+  y.test <- y[folds.all[[fold.id]]]
+  x.train <- x[-folds.all[[fold.id]],]
+  y.train <- y[-folds.all[[fold.id]]]
+  
+  ### Run  penlda CV for lambda
+  penlda.cv.out <- PenalizedLDA.cv(x=x.train, y=y.train, lambdas=lambda.seq, nfold = 10)
+  lambda.set <- penlda.cv.out$bestlambda ### Record the lambda used
+  penlda.out <- PenalizedLDA(x=x.train, y=y.train, lambda=lambda.set, K=1)
+  
+  discrim.temp <- penlda.out$discrim
+
+  ##### Test Set #####
+  
+  xte <- scale(x.test, center = apply(x.train, 2, mean), scale = penlda.out$wcsd.x) #normalize test data
+  probs.log.temp <- xte%*%penlda.out$discrim #calculte posterior log-odds
+  probs.temp <- 1/(1+exp(-probs.log.temp))
+  
+  
+  
+  roc.temp <- pROC::roc(y.test, as.vector(probs.temp))
+  # plot(my.roc)
+  auc.temp <- as.numeric(my.roc$auc)
+}
+
+x.test <- x[folds.all[[fold.id]],]
+y.test <- y[folds.all[[fold.id]]]
+
+x.train <- x[-folds.all[[fold.id]],]
+y.train <- y[-folds.all[[fold.id]]]
+
+penlda.cv.out <- PenalizedLDA.cv(x=x.train, y=y.train, lambdas=lambda.seq, nfold = 10)
+### plot(penlda.cv.out)
+
+lambda.set <- penlda.cv.out$bestlambda ### Record the lambda used
+penlda.out <- PenalizedLDA(x=x.train, y=y.train, lambda=lambda.set, K=1)
+
+discrim.temp <- penlda.out$discrim
+### plot(seq(45, 90, 0.1), penlda.out$discrim)  ### Want to save this vector
+
+##### Test Set #####
+
+xte <- scale(x.test, center = apply(x.train, 2, mean), scale = penlda.out$wcsd.x) #normalize test data
+probs.log.temp <- xte%*%penlda.out$discrim #calculte posterior log-odds
+probs.temp <- 1/(1+exp(-probs.log.temp))
+
+
+
+roc.temp <- pROC::roc(y.test, as.vector(probs.temp))
+# plot(my.roc)
+auc.temp <- as.numeric(my.roc$auc)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 penlda.cv.out <- PenalizedLDA.cv(x=x, y=y)
 
-lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
+
 penlda.cv.out <- PenalizedLDA.cv(x=x, y=y, lambdas=lambda.seq, nfold = 10)
 
 plot(penlda.cv.out)
@@ -21,8 +157,7 @@ penlda.cv.out$bestlambda
 
 set.seed(10)
 
-folds.all <- caret::createFolds(class.raw$SLE)
-lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
+
 
 ### I have figured out how to get posterior estimates of the probability for the binary cases.
 
