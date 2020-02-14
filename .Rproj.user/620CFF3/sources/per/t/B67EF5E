@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1581637987323.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3595006686",
+    "id" : "B67EF5E",
+    "lastKnownWriteTime" : 1581650282,
+    "last_content_update" : 1581650282875,
+    "path" : "C:/Users/Robert/Dropbox/Northern Arizona University/Github_Repos/Thermogram_Toolkit/Further_Toolkit_Startup.R",
+    "project_path" : "Further_Toolkit_Startup.R",
+    "properties" : {
+        "cursorPosition" : "99,82",
+        "scrollLine" : "80",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -43,7 +43,7 @@ plot(fdata.raw)
 # full.spline <- create.bspline.basis(range=range(temperatures), nbasis = thermogram.length+2)
 
 ### We can tune from basis = 2 to length(argvals))
-basis <- 125 ### Tuneable, if basis=length(arvals) then use raw.
+basis <- 450 ### Tuneable, if basis=length(arvals) then use raw.
 reduced.basis.spline <- create.bspline.basis(range=range(temperatures), nbasis = basis+2)
 Smoothing.Matrix <- S.basis(temperatures, basis=reduced.basis.spline)
 
@@ -62,3 +62,37 @@ colnames(toolkit.ws) <- c('Class', temperatures)
 ### Below is me starting to work on functions that should call the working data set.
 ################################
 
+
+### A function that takes thermogram data and produces a 'smoothed' version based on nbasis and lambda-pen
+
+### x : a matrix (for thermograms this should be ...)
+### argvals : the temperatures
+### basis.size : the n.basis used to produce fda representation
+
+
+typeof(x)
+typeof(thermograms.raw)
+
+x <- thermograms.raw
+argvals <- temperatures
+nbasis <- length(argvals)-1
+
+thermogram.fda <- function(x, argvals, nbasis)
+{
+  if(typeof(x)=='list') x<-as.matrix(x)
+  thermogram.length <- length(argvals)
+  samples.n <- dim(x)[1]
+  
+  fdata.raw <- fdata(x, argvals=argvals)
+  reduced.basis.spline <- create.bspline.basis(range=range(argvals), nbasis = nbasis)
+  Smoothing.Matrix <- S.basis(argvals, basis=reduced.basis.spline)
+  
+  fdata.smooth <- fdata.raw
+  fdata.smooth$data <- fdata.raw$data%*%Smoothing.Matrix
+  
+  return(fdata.smooth)
+}
+
+fdata.temp <- thermogram.fda(thermograms.raw, temperatures, 5)
+plot(fdata.temp)
+for(j in seq(10, 200, 10)) plot(thermogram.fda(thermograms.raw, temperatures, j), main=j)
