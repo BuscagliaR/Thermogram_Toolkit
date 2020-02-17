@@ -85,31 +85,92 @@ i=1
 ### loop over folds
 fld=1
 
-
 train.index <- which(folds.list[[i]]!=fld)
-
 train.x <- predictor.set[train.index,]
 test.x <- predictor.set[-train.index,]
 train.classes <- classes[train.index]
+n.test <- dim(test.x)[1]
 
-model.result<-func(train.x, test.x, train.classes)
-
-if(model.chosen=='lr.fit')
+if(model.chosen=='lr.fit') 
 {
+  func<-lr.fit
+  model.result<-func(train.x, test.x, train.classes)
   coefficients <- model.result$coefficients[-1]
+  coefficients[which(is.na(output$Coef))]<-0
   predictions <- predict.glm(model.result, as.data.frame(test.x), type="response")
+  output <- list(Coef=coefficients, Pred.Test=predictions, Test.Info=c(i, fld, n.test))
 }
 
-  
+plot(temperatures, coefficients)
 
+
+which(is.na(output$Coef))
 
 
 plot(predictions)
 
-validator<-function(preds, classes, folds.list)
+validator.step<-function(predictor.set, classes, model.chosen, folds.list, i, fld)
 {
+  train.index <- which(folds.list[[i]]!=fld)
+  train.x <- predictor.set[train.index,]
+  test.x <- predictor.set[-train.index,]
+  train.classes <- classes[train.index]
+  n.test <- dim(test.x)[1]
   
+  if(model.chosen=='lr.fit') 
+  {
+    func<-lr.fit
+    model.result<-func(train.x, test.x, train.classes)
+    coefficients <- model.result$coefficients[-1]
+    coefficients[which(is.na(output$Coef))]<-0
+    predictions <- predict.glm(model.result, as.data.frame(test.x), type="response")
+    output <- list(Coef=coefficients, Pred.Test=predictions, Test.Info=c(i, fld, n.test))
+  }
+  
+  return(output)
 }
+
+
+model.chosen='lr.fit'
+predictor.set <- fdata.working$data
+classes <- class.raw$V452
+folds <- 10
+repeats <- 10
+folds.list <- fold.creator(classes, folds, repeats)
+
+validator.step(predictor.set, classes, model.chosen, folds.list, 1, 1)
+
+length(folds.list)
+max(folds.list[[1]])
+
+validation.kcv<-function(predictor.set, classes, model.chosen, folds.list, parallel.on=0)
+{
+  iterations <- length(folds.list)
+  folds <- max(folds.list[[1]])
+  if(parallel.on)
+  {
+    
+  }
+  if(!parallel.on)
+  {
+    for(j in 1:iterations)
+    {
+      
+    }
+    
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
 
 lr.kcv<-function(preds, classes, folds.list)
 {

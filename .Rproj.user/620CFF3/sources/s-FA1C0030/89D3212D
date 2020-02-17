@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1581915437664.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2663462860",
+    "id" : "89D3212D",
+    "lastKnownWriteTime" : 1581915643,
+    "last_content_update" : 1581915643043,
+    "path" : "C:/Users/Robert/Dropbox/Northern Arizona University/Github_Repos/Thermogram_Toolkit/Toolkit_3.R",
+    "project_path" : "Toolkit_3.R",
+    "properties" : {
+        "cursorPosition" : "74,68",
+        "scrollLine" : "59",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
