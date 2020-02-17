@@ -109,7 +109,7 @@ which(is.na(output$Coef))
 
 plot(predictions)
 
-validator.step<-function(predictor.set, classes, model.chosen, folds.list, i, fld)
+validator.step<-function(predictor.set, classes, model.chosen, folds.list, index, fld)
 {
   train.index <- which(folds.list[[i]]!=fld)
   train.x <- predictor.set[train.index,]
@@ -124,7 +124,7 @@ validator.step<-function(predictor.set, classes, model.chosen, folds.list, i, fl
     coefficients <- model.result$coefficients[-1]
     coefficients[which(is.na(output$Coef))]<-0
     predictions <- predict.glm(model.result, as.data.frame(test.x), type="response")
-    output <- list(Coef=coefficients, Pred.Test=predictions, Test.Info=c(i, fld, n.test))
+    output <- list(Coef=coefficients, Pred.Test=predictions, Test.Info=c(index, fld, n.test))
   }
   
   return(output)
@@ -149,18 +149,27 @@ validation.kcv<-function(predictor.set, classes, model.chosen, folds.list, paral
   folds <- max(folds.list[[1]])
   if(parallel.on)
   {
-    
+    cat('No Parallel Yet')
   }
   if(!parallel.on)
   {
-    for(j in 1:iterations)
+    all.trials <- foreach(j=1:repeats, .combine=append, .export=c('validator.step', 'model.chosen', 'folds.list')) %do%
     {
-      
+      cat(j)
+      trial.temp<-foreach(k=1:folds, .combine=append, .export=c('validator.step', 'model.chosen', 'folds.list')) %do%
+      {
+        output <- validator.step(predictor.set, classes, model.chosen, folds.list, j, k)
+        return(list(output))
+      }
     }
-    
   }
 }
 
+
+
+all.trials[[1]]
+library(foreach)
+library(doParallel)
 
 
 
