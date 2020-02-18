@@ -30,7 +30,7 @@ class.raw <- data.raw %>% select(thermogram.length+1)
 ### 
 ### NEEDS: Derivative.
 
-thermogram.fda <- function(x, argvals, nbasis)
+thermogram.fda <- function(x, argvals, nbasis, nderiv=NULL)
 {
   if(typeof(x)=='list') x<-as.matrix(x)
   thermogram.length <- length(argvals)
@@ -44,12 +44,21 @@ thermogram.fda <- function(x, argvals, nbasis)
   ### Tryign to decide how to handle if the 'smoothing' is singular
   ### Need to just return an unsmoothed matrix, but its global and I can't find another way yet.
   
+  ### Need to also evaluate using penalized smoothing
+  
   fdata.smooth <- fdata.raw
   fdata.smooth$data <- fdata.raw$data%*%Smoothing.Matrix
+  
+  if(!is.null(nderiv))
+  {
+    fdata.smooth <- fdata.deriv(fdata.smooth, nderiv=nderiv)
+  }
+  
   return(fdata.smooth)
 }
 
 fdata.working <- thermogram.fda(thermograms.raw, temperatures, 300)
+plot(fdata.working)
 # rm(Smoothing.Matrix)
 
 
@@ -91,9 +100,9 @@ ridge.fit<-function(train.x, test.x, train.classes)
   return(cv.step)
 }
 
-pred.step<-predict(cv.step, test.x, type="response", s=cv.step$lambda.min)
-
-coef(cv.step, s=cv.step$lambda.min)
+# pred.step<-predict(cv.step, test.x, type="response", s=cv.step$lambda.min)
+# 
+# coef(cv.step, s=cv.step$lambda.min)
 
 # if(model.chosen=='lr.fit') func<-lr.fit
 # func<-lr.fit
@@ -158,7 +167,7 @@ validator.step<-function(predictor.set, classes, model.chosen, folds.list, index
   {
     func<-lasso.fit
     model.result<-func(train.x, test.x, train.classes)
-    coefficients <- coef(model.result, s=cv.step$lambda.min)[-1]
+    coefficients <- coef(model.result, s=model.result$lambda.min)[-1]
     coefficients[which(is.na(model.result$Coef))]<-0
     predictions <- predict(model.result, test.x, type="response", s=model.result$lambda.min)
     output <- list(Coef=coefficients, Pred.Test=predictions, Test.Info=c(index, fld, n.test), Penalty.Lambda=c(model.result$lambda.min))
@@ -168,7 +177,7 @@ validator.step<-function(predictor.set, classes, model.chosen, folds.list, index
   {
     func<-enet.fit
     model.result<-func(train.x, test.x, train.classes)
-    coefficients <- coef(model.result, s=cv.step$lambda.min)[-1]
+    coefficients <- coef(model.result, s=model.result$lambda.min)[-1]
     coefficients[which(is.na(model.result$Coef))]<-0
     predictions <- predict(model.result, test.x, type="response", s=model.result$lambda.min)
     output <- list(Coef=coefficients, Pred.Test=predictions, Test.Info=c(index, fld, n.test), Penalty.Lambda=c(model.result$lambda.min))
@@ -178,11 +187,20 @@ validator.step<-function(predictor.set, classes, model.chosen, folds.list, index
   {
     func<-ridge.fit
     model.result<-func(train.x, test.x, train.classes)
-    coefficients <- coef(model.result, s=cv.step$lambda.min)[-1]
+    coefficients <- coef(model.result, s=model.result$lambda.min)[-1]
     coefficients[which(is.na(model.result$Coef))]<-0
     predictions <- predict(model.result, test.x, type="response", s=model.result$lambda.min)
     output <- list(Coef=coefficients, Pred.Test=predictions, Test.Info=c(index, fld, n.test), Penalty.Lambda=c(model.result$lambda.min))
   }
+  
+  ### Adaptive LASSO
+  ### Adaptive ENET
+  ### LDA
+  ### Penalized LDA
+  ### Boosting
+  ### Bagging
+  ### Random Forest
+  ### SVM?
   
   return(output)
 }
@@ -229,11 +247,11 @@ validation.kcv<-function(predictor.set, classes, model.chosen, folds.list, paral
 
 
 
-# all.trials[[1]]
-library(foreach)
-library(doParallel)
+# # all.trials[[1]]
+# library(foreach)
+# library(doParallel)
 
-model.chosen='lr.fit'
+# model.chosen='lr.fit'
 model.chosen='lasso.fit'
 predictor.set <- fdata.working$data
 classes <- class.raw$V452
@@ -283,25 +301,54 @@ hist(penalty.final)
 
 validation.ROC <- function(validation.kcv.output, classes, folds.list)
 {
-  validation.kcv.output <- test.1
+  require(ROCR)
+  require(pROC)
+  
+  repeats <- length(validation.kcv.output)
+  folds <- length(validation.kcv.output[[1]]) # should always be at least 1
+  n.coef <- length(validation.kcv.output[[1]][[1]]$Coef)
+  ROC.results <- list()
+  for(j in 1:repeats)
+  {
+    for(k in 1:folds) 
+      {
+        preds.temp <- validation.kcv.output[[j]][[k]]$Pred.Test
+        
+        train.index <- which(folds.list[[j]]!=k)
+        train.x <- predictor.set[train.index,]
+        test.x <- predictor.set[-train.index,]
+        train.classes <- classes[train.index]
+        test.classes<-classes[-train.index]
+        
+        roc.temp <- roc(as.numeric(test.classes), as.numeric(preds.temp))
+        rocr.temp <- prediction(preds.temp, test.classes)
+        
+        ROC.results[[folds*(j-1)+k]]<-list(roc=roc.temp, rocr=rocr.temp)
+      }
+  }
+  
+  return(ROC.results)
   
 }
 
-plot(test.1[[1]][[1]]$Coef)
+ROC.output <- validation.ROC(test.1, classes, folds.list)
+
+plot(ROC.output[[1]][[1]])
+for(j in 1:(repeats*folds)) lines(ROC.output[[j]][[1]])
 
 
-plot(temperatures, test.1[[2]][[5]]$Coef)
-
-preds.temp <- test.1[[repeats]][[folds]]$Pred.Test
-
-library(pROC)
 
 
-train.index <- which(folds.list[[repeats]]!=folds)
-train.x <- predictor.set[train.index,]
-test.x <- predictor.set[-train.index,]
-train.classes <- classes[train.index]
-test.classes<-classes[-train.index]
+
+acc.temp <- performance(ROC.output[[1]][[2]], 'acc')
+plot(acc.temp)
+
+for(j in 2:(repeats*folds)) 
+  {
+  acc.temp <- performance(ROC.output[[j]][[2]], 'acc')
+  lines(acc.temp)
+  }
+
 
 roc.temp <- roc(as.numeric(test.classes), as.numeric(preds.temp))
 
@@ -326,9 +373,18 @@ library(ROCR)
 
 
 pred.rocr <- prediction(preds.temp, test.classes)
-pred.rocr@cutoffs
+cutoffs.temp <- pred.rocr@cutoffs
+acc.temp <- performance(pred.rocr, 'acc')
+sens.temp <- performance(pred.rocr, 'sens')
+spec.temp <- performance(pred.rocr, 'spec')
 
-plot(performance(pred.rocr, 'acc'))
+pred.rocr@predictions
+
+acc.temp <- performance(pred.rocr, 'acc')
+
+acc.temp@y.values
+acc.temp@x.values
+
 performance(pred.rocr, 'sens', 'spec')
 
 perf <- performance(pred.rocr,"tpr","fpr")
@@ -336,50 +392,5 @@ plot(perf,colorize=TRUE)
 
 
 
-
-
-lr.kcv<-function(preds, classes, folds.list)
-{
-  sim.full<-preds
-  output.predictions<-list()
-  output.accuracy<-numeric()
-  output.sensitivity<-numeric()
-  output.specificity<-numeric()
-  
-  for(k in 1:trials)
-  {
-    trial.temp<-foreach(j=1:folds, .combine=append, .export="lr.fit") %dopar%
-      {
-        ### LENGTHS
-        n.train<-length(which(folds.list[[k]]!=j))
-        n.test<-length(which(folds.list[[k]]==j))
-        
-        ### CLASSES AND COUNTS
-        train.classes<-classes[folds.list[[k]]!=j]
-        test.classes<-classes[folds.list[[k]]==j]
-        N0<-length(which(test.classes==0))
-        N1<-length(which(test.classes==1))
-        
-        train.x<-sim.full[,folds.list[[k]]!=j]
-        test.x<-sim.full[,folds.list[[k]]==j]
-        
-        n.train<-length(which(folds.list[[k]]!=j))
-        n.test<-length(which(folds.list[[k]]==j))
-        
-        fit.out<-lr.fit(train.x, test.x, train.classes, test.classes)
-        return(list(fit.out))
-      }
-    
-    for(j in 1:folds)
-    {
-      output.predictions[[folds*(k-1)+j]]<-trial.temp[[j]]$predictions
-      output.accuracy[folds*(k-1)+j]<-trial.temp[[j]]$accuracy
-      output.sensitivity[folds*(k-1)+j]<-trial.temp[[j]]$sensitivity
-      output.specificity[folds*(k-1)+j]<-trial.temp[[j]]$specificity 
-    }
-  }
-  
-  return(list(accuracy=output.accuracy, sensitivity=output.sensitivity, specificity=output.specificity, est.class.probs=output.predictions))
-}
 
 
