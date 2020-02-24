@@ -190,7 +190,8 @@ validator.step<-function(predictor.set, classes, model.chosen, folds.list, index
     coefficients <- coef(model.result, s=model.result$lambda.min)[-1]
     coefficients[which(is.na(model.result$Coef))]<-0
     predictions <- predict(model.result, test.x, type="response", s=model.result$lambda.min)
-    output <- list(Coef=coefficients, Pred.Test=predictions, Test.Info=c(index, fld, n.test), Penalty.Lambda=c(model.result$lambda.min))
+    output <- list(Coef=coefficients, Pred.Test=predictions, Test.Info=c(index, fld, n.test), 
+                   Penalty.Lambda=c(model.result$lambda.min))
   }
   
   ### Adaptive LASSO
@@ -251,8 +252,8 @@ validation.kcv<-function(predictor.set, classes, model.chosen, folds.list, paral
 # library(foreach)
 # library(doParallel)
 
-# model.chosen='lr.fit'
-model.chosen='lasso.fit'
+model.chosen='lr.fit'
+# model.chosen='lasso.fit'
 predictor.set <- fdata.working$data
 classes <- class.raw$V452
 folds <- 4
