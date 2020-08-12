@@ -43,7 +43,7 @@ plot(fdata.raw)
 # full.spline <- create.bspline.basis(range=range(temperatures), nbasis = thermogram.length+2)
 
 ### We can tune from basis = 2 to length(argvals))
-basis <- 125 ### Tuneable, if basis=length(arvals) then use raw.
+basis <- 450 ### Tuneable, if basis=length(arvals) then use raw.
 reduced.basis.spline <- create.bspline.basis(range=range(temperatures), nbasis = basis+2)
 Smoothing.Matrix <- S.basis(temperatures, basis=reduced.basis.spline)
 
@@ -62,129 +62,37 @@ colnames(toolkit.ws) <- c('Class', temperatures)
 ### Below is me starting to work on functions that should call the working data set.
 ################################
 
-######### Function #############
 
-## I will start by doing something outside the scope of 578.  I will use Penalized-LDA
+### A function that takes thermogram data and produces a 'smoothed' version based on nbasis and lambda-pen
 
-library('penalizedLDA')
+### x : a matrix (for thermograms this should be ...)
+### argvals : the temperatures
+### basis.size : the n.basis used to produce fda representation
 
-fdata.working <- fdata.raw ### Working functional data set
 
-x <- fdata.working$data
-dim(x)
-y <- as.numeric(class.raw$SLE)
-penlda.cv.out <- PenalizedLDA.cv(x=x, y=y)
+typeof(x)
+typeof(thermograms.raw)
 
-lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
-penlda.cv.out <- PenalizedLDA.cv(x=x, y=y, lambdas=lambda.seq, nfold = 10)
+x <- thermograms.raw
+argvals <- temperatures
+nbasis <- length(argvals)-1
 
-plot(penlda.cv.out)
-penlda.cv.out$bestlambda
-
-### The start of a function
-
-set.seed(10)
-
-folds.all <- caret::createFolds(class.raw$SLE)
-lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
-
-### I have figured out how to get posterior estimates of the probability for the binary cases.
-
-fold.id <- 2
-
-folds.all[[fold.id]]
-
-x.test <- x[folds.all[[fold.id]],]
-y.test <- y[folds.all[[fold.id]]]
-
-x.train <- x[-folds.all[[fold.id]],]
-y.train <- y[-folds.all[[fold.id]]]
-
-penlda.cv.out <- PenalizedLDA.cv(x=x.train, y=y.train, lambdas=lambda.seq, nfold = 10)
-
-lambda.set <- penlda.cv.out$bestlambda
-
-penlda.out <- PenalizedLDA(x=x.train, y=y.train, lambda=lambda.set, K=1)
-
-plot(penlda.out$discrim)
-
-penlda.out$wcsd.x
-
-xte <- scale(x.test, center = apply(x.train, 2, mean), scale = penlda.out$wcsd.x)
-probs <- xte%*%penlda.out$discrim
-probs
-predict.test <- probs>0
-factor(predict.test, c(TRUE, FALSE), c(0,1))
-y.test-1
-
-table(y.test-1, predict.test)
-mean(y.test-1==predict.test)
-
-cbind(probs, penlda.preds$ypred)
-
-penlda.preds <- predict(penlda.out, x.test)
-acc <- mean(penlda.preds$ypred==y.test)  ### There does not seem to be a way to get posterior probabilities, so we may not include this
-
-predict.penlda
-
-scale(x.test, mean(x.train), sd(x.train))
-
-### A loop
-
-set.seed(10)
-
-folds.n <- 10
-folds.all <- caret::createFolds(class.raw$SLE, k = folds.n)
-lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
-acc <- vector()
-
-for(fold.id in 1:folds.n)
+thermogram.fda <- function(x, argvals, nbasis)
 {
-  x.test <- x[folds.all[[fold.id]],]
-  y.test <- y[folds.all[[fold.id]]]
+  if(typeof(x)=='list') x<-as.matrix(x)
+  thermogram.length <- length(argvals)
+  samples.n <- dim(x)[1]
   
-  x.train <- x[-folds.all[[fold.id]],]
-  y.train <- y[-folds.all[[fold.id]]]
+  fdata.raw <- fdata(x, argvals=argvals)
+  reduced.basis.spline <- create.bspline.basis(range=range(argvals), nbasis = nbasis)
+  Smoothing.Matrix <- S.basis(argvals, basis=reduced.basis.spline)
   
-  penlda.cv.out <- PenalizedLDA.cv(x=x.train, y=y.train, lambdas=lambda.seq, nfold = 10)
+  fdata.smooth <- fdata.raw
+  fdata.smooth$data <- fdata.raw$data%*%Smoothing.Matrix
   
-  lambda.set <- penlda.cv.out$bestlambda
-  
-  penlda.out <- PenalizedLDA(x=x.train, y=y.train, lambda=lambda.set, K=1)
-  
-  penlda.preds <- predict(penlda.out, x.test)
-  acc[fold.id] <- mean(penlda.preds$ypred==y.test)  ### There does not seem to be a way to get posterior probabilities, so we may not include this
+  return(fdata.smooth)
 }
 
-boxplot(acc)  ### Got about 72% mean test set accuracy in first run, on a smoothed set
-## Second run was on original data, seemed different, tuning should be interesting.
-
-### Enforcing a fused penalty
-### This is something of interest but takes double the tuning (so probably quadruple the effort)
-
-# set.seed(10)
-# 
-# folds.n <- 10
-# folds.all <- caret::createFolds(class.raw$SLE, k = folds.n)
-# lambda.seq <- exp(seq(-6, 2, 0.01))  ### This could be an input, best to suggest evalauating this outide of functions.
-# acc <- vector()
-# 
-# for(fold.id in 1:folds.n)
-# {
-#   x.test <- x[folds.all[[fold.id]],]
-#   y.test <- y[folds.all[[fold.id]]]
-#   
-#   x.train <- x[-folds.all[[fold.id]],]
-#   y.train <- y[-folds.all[[fold.id]]]
-#   
-#   penlda.cv.out <- PenalizedLDA.cv(x=x.train, y=y.train, lambdas=lambda.seq, nfold = 10, type='ordered')
-#   
-#   lambda.set <- penlda.cv.out$bestlambda
-#   
-#   penlda.out <- PenalizedLDA(x=x.train, y=y.train, lambda=lambda.set, K=1, type='ordered')
-#   
-#   penlda.preds <- predict(penlda.out, x.test)
-#   acc[fold.id] <- mean(penlda.preds$ypred==y.test)  ### There does not seem to be a way to get posterior probabilities, so we may not include this
-# }
-# 
-# boxplot(acc)  ### Got about 72% mean test set accuracy in first run
+fdata.temp <- thermogram.fda(thermograms.raw, temperatures, 5)
+plot(fdata.temp)
+for(j in seq(10, 200, 10)) plot(thermogram.fda(thermograms.raw, temperatures, j), main=j)
